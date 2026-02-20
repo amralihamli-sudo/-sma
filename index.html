@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تحدي الأسئلة - Quiz Game</title>
+<style>
+body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #2196F3, #4CAF50); color: #fff; text-align: center; padding: 20px; }
+h1 { margin-bottom: 10px; }
+#quiz-container { max-width: 600px; margin: auto; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px; }
+button { display: block; width: 100%; padding: 15px; margin: 10px 0; font-size: 16px; border-radius: 10px; border: none; cursor: pointer; }
+button:hover { opacity: 0.9; }
+.correct { background-color: #4CAF50; color: #fff; }
+.wrong { background-color: #F44336; color: #fff; }
+#score, #question-number { margin: 10px 0; font-weight: bold; }
+#result-container { display: none; }
+</style>
+</head>
+<body>
+
+<h1>⚡ تحدي الأسئلة ⚡</h1>
+<p>200 سؤال في الثقافة، الرياضة، الطب، والهندسة</p>
+
+<div id="quiz-container">
+  <div id="question-number"></div>
+  <div id="score">النقاط: 0</div>
+  <h2 id="question">السؤال سيظهر هنا</h2>
+  <button id="option0" onclick="selectAnswer(0)"></button>
+  <button id="option1" onclick="selectAnswer(1)"></button>
+  <button id="option2" onclick="selectAnswer(2)"></button>
+  <button id="option3" onclick="selectAnswer(3)"></button>
+</div>
+
+<div id="result-container">
+  <h2>النتيجة النهائية</h2>
+  <p id="final-score"></p>
+  <p id="final-message"></p>
+  <button onclick="restartGame()">العب مرة أخرى</button>
+</div>
+
+<script>
+const levels = {
+  1: [
+    {q:"ما هي عاصمة فرنسا؟", o:["لندن","باريس","برلين","مدريد"], a:1},
+    {q:"كم عدد الكواكب في المجموعة الشمسية؟", o:["7","8","9","10"], a:1},
+    {q:"من هو مؤسس Microsoft؟", o:["ستيف جوبز","بيل جيتس","مارك زوكربيرج","جيف بيزوس"], a:1},
+    {q:"ما هو أكبر عضو في جسم الإنسان؟", o:["القلب","الكبد","الجلد","الدماغ"], a:2},
+    {q:"ما هي وحدة قياس التيار الكهربائي؟", o:["الفولت","الأمبير","الوات","الأوم"], a:1},
+    // أضف باقي أسئلة المستوى 1 هنا
+  ],
+  2: [
+    {q:"من اكتشف الجاذبية؟", o:["أينشتاين","نيوتن","جاليليو","أرخميدس"], a:1},
+    {q:"ما هي أكبر قارة؟", o:["أفريقيا","آسيا","أوروبا","أمريكا الشمالية"], a:1},
+    {q:"كم عدد عظام جسم الإنسان البالغ؟", o:["206","208","210","212"], a:0},
+    {q:"ما أطول نهر في العالم؟", o:["الأمازون","النيل","اليانغتسي","المسيسيبي"], a:1},
+    {q:"في أي عام بدأت الحرب العالمية الثانية؟", o:["1937","1938","1939","1940"], a:2},
+    // أضف باقي أسئلة المستوى 2 هنا
+  ],
+  3: [
+    {q:"ما التركيب الكيميائي للسكر؟", o:["C6H12O6","C12H22O11","C6H12O6","C2H5OH"], a:0},
+    {q:"من اخترع المصباح الكهربائي؟", o:["توماس إديسون","نيكولا تسلا","ألكسندر بيل","بنجامين فرانكلين"], a:0},
+    {q:"ما معادلة أينشتاين الشهيرة؟", o:["F=ma","E=mc²","PV=nRT","V=IR"], a:1},
+    {q:"في أي عام هبط الإنسان على القمر؟", o:["1965","1967","1969","1971"], a:2},
+    {q:"من أشهر رسام عصر النهضة؟", o:["مايكل أنجلو","ليوناردو دا فينشي","رفائيل","دوناتيلو"], a:1},
+    // أضف باقي أسئلة المستوى 3 هنا
+  ],
+  4: [
+    {q:"ما نظرية الأوتار الفائقة؟", o:["في الفيزياء","في الرياضيات","في الكيمياء","في الأحياء"], a:0},
+    {q:"من مكتشف البنسلين؟", o:["لويس باستور","ألكسندر فليمنج","روبرت كوخ","جوزيف ليستر"], a:1},
+    {q:"أصعب مادة في جسم الإنسان؟", o:["العظام","مينا الأسنان","الأظافر","الشعر"], a:1},
+    {q:"من صمم برج إيفل؟", o:["غوستاف إيفل","لي كوربوزييه","فرانك لويد رايت","أنطوني غاودي"], a:0},
+    {q:"أكبر محيط في العالم؟", o:["الأطلسي","الهادي","الهندي","المتجمد الشمالي"], a:1},
+    // أضف باقي أسئلة المستوى 4 هنا
+  ]
+};
+
+let currentLevel = 1;
+let currentQuestionIndex = 0;
+let score = 0;
+let questions = levels[currentLevel];
+
+function showQuestion() {
+  const q = questions[currentQuestionIndex];
+  document.getElementById("question-number").innerText = "السؤال " + (currentQuestionIndex+1) + " من " + questions.length;
+  document.getElementById("score").innerText = "النقاط: " + score;
+  document.getElementById("question").innerText = q.q;
+  for(let i=0;i<4;i++){
+    const btn = document.getElementById("option"+i);
+    btn.innerText = q.o[i];
+    btn.disabled = false;
+    btn.className = "";
+  }
+}
+
+function selectAnswer(choice){
+  const q = questions[currentQuestionIndex];
+  if(choice === q.a){ score += 10; document.getElementById("option"+choice).className="correct"; }
+  else{ document.getElementById("option"+choice).className="wrong"; document.getElementById("option"+q.a).className="correct"; }
+  for(let i=0;i<4;i++){ document.getElementById("option"+i).disabled = true; }
+  setTimeout(nextQuestion,1000);
+}
+
+function nextQuestion(){
+  currentQuestionIndex++;
+  if(currentQuestionIndex < questions.length) showQuestion();
+  else showResult();
+}
+
+function showResult(){
+  document.getElementById("quiz-container").style.display="none";
+  document.getElementById("result-container").style.display="block";
+  document.getElementById("final-score").innerText = "حصلت على " + score + " نقطة من أصل " + (questions.length*10);
+  let message="";
+  if(score >= questions.length*8) message="ممتاز! أنت عبقري! 🏆";
+  else if(score >= questions.length*6) message="جيد جداً! واصل التعلم! 🌟";
+  else if(score >= questions.length*4) message="جيد! حاول مرة أخرى! 👍";
+  else message="تحتاج للمزيد من الممارسة! 💪";
+  document.getElementById("final-message").innerText = message;
+}
+
+function restartGame(){
+  score=0;
+  currentQuestionIndex=0;
+  questions = levels[currentLevel];
+  document.getElementById("quiz-container").style.display="block";
+  document.getElementById("result-container").style.display="none";
+  showQuestion();
+}
+
+showQuestion();
+</script>
+
+</body>
+  </html>
